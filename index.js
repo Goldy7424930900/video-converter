@@ -25,6 +25,8 @@ app.get("/", (req, res) => {
 });
 
 app.post("/upload", upload.single("uploaded_file"), (req, res) => {
+  const outputFileType = ".mp4";
+
   if (!req.file) {
     return res.status(400).send("No file uploaded.");
   }
@@ -32,14 +34,21 @@ app.post("/upload", upload.single("uploaded_file"), (req, res) => {
   console.log("File uploaded:", req.file);
   console.log("File path:", req.file.path);
 
-  const outputFileName = `transcoded-${req.file.originalname}`;
+  const outputFileName = `transcoded-${req.file.originalname}`
+    .split(".")
+    .slice(0, -1)
+    .join(".")
+    .concat(outputFileType);
   const outputPath = path.join(__dirname, "public", outputFileName);
 
   hbjs
     .spawn({ input: req.file.path, output: outputPath })
+    .on("begin", () => {
+      console.log("begin");
+    })
     .on("error", (err) => {
       console.error("Error processing video:", err);
-      res.status(500).send("Error processing video.");
+      // res.status(500).send("Error processing video.");
     })
     .on("progress", (progress) => {
       console.log(
@@ -48,10 +57,10 @@ app.post("/upload", upload.single("uploaded_file"), (req, res) => {
         progress.eta
       );
     })
-    .on("output", (output) => {
-      // Accumulate output in a variable if needed
-      // For simplicity, let's ignore output events for now
-    })
+    // .on("output", (output) => {
+    //   // Accumulate output in a variable if needed
+    //   // For simplicity, let's ignore output events for now
+    // })
     .on("end", () => {
       console.log("Video processing completed successfully.");
 
